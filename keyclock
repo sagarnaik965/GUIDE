@@ -1,0 +1,12 @@
+docker run -d -p 8098:8080 \
+  -e KEYCLOAK_USER=admin \
+  -e KEYCLOAK_PASSWORD=admin \
+  --name keycloak \
+  quay.io/keycloak/keycloak:latest
+
+docker run -d -p 8098:8080 ^
+  -e KEYCLOAK_USER=admin ^
+  -e KEYCLOAK_PASSWORD=admin ^
+  --name keycloak ^
+  quay.io/keycloak/keycloak:latest
+
