@@ -1,0 +1,165 @@
+### Option 2: **Running HammerDB in CLI Mode (Command Line Interface)**
+
+Here’s a step-by-step guide to running **HammerDB** in CLI mode, which is useful for environments without a graphical interface.
+
+#### Step 1: **Install HammerDB**
+
+1. Download the HammerDB version for your operating system (Linux or Windows). You can get the latest version from the [HammerDB website](https://www.hammerdb.com/).
+   - For Linux, you can download the `.tar.gz` file and extract it.
+   - For Windows, download and extract the zip.
+
+2. Transfer the extracted files to your production server if required.
+
+   Example for Linux:
+   ```bash
+   tar -xzvf hammerdb-x.x-linux.tar.gz
+   ```
+
+#### Step 2: **Create a TCL Script for Benchmarking**
+
+You need a TCL script that HammerDB CLI will use to execute the benchmarking tests.
+
+1. Create a script (e.g., `benchmark.tcl`), which will define the database connection and the workload you want to test.
+   
+   Example `benchmark.tcl` script:
+   ```tcl
+   # Set the database type (Oracle, PostgreSQL, etc.)
+   dbset db ora             # For Oracle, or use pg for PostgreSQL
+
+   # Set database connection details
+   diset connection systemdb mydb  # The database name
+   diset connection user scott     # Database user
+   diset connection password tiger # Database password
+
+   # Set the number of virtual users and iterations
+   vuset vu 5                      # Number of virtual users
+   vuset iterations 100             # Number of iterations per user
+
+   # Load the TPC-C schema (adjust depending on your test workload)
+   loadscript
+
+   # Create virtual users and run the workload
+   vucreate
+   vurun
+   ```
+
+2. Modify the script according to your database type, connection details, and the workload type you want to benchmark.
+
+#### Step 3: **Run HammerDB in CLI Mode**
+
+1. Navigate to the HammerDB installation directory:
+   ```bash
+   cd /path/to/hammerdb
+   ```
+
+2. Run HammerDB in CLI mode and pass the script you created:
+   ```bash
+   ./hammerdbcli auto benchmark.tcl
+   ```
+
+3. **Monitor Output**: The CLI will start executing the benchmark based on the configuration in your TCL script, and you’ll see the results printed to the terminal.
+
+4. **Save Results**: You can also redirect the output to a file for later analysis:
+   ```bash
+   ./hammerdbcli auto benchmark.tcl > results.txt
+   ```
+
+#### Step 4: **Analyze Results**
+
+- After the benchmark completes, the results (such as transaction rates and response times) will be displayed in the CLI or saved in the file, depending on your setup.
+- You can then use these results to gauge your database performance under the defined load.
+
+---
+
+### Option 4: **Running HammerDB in a Docker Container**
+
+Here’s a step-by-step guide to running **HammerDB** inside a Docker container.
+
+#### Step 1: **Install Docker**
+
+1. If Docker is not already installed, install it using the package manager for your distribution.
+   - **For Ubuntu**:
+     ```bash
+     sudo apt-get update
+     sudo apt-get install docker.io
+     ```
+
+   - **For CentOS**:
+     ```bash
+     sudo yum install docker
+     ```
+
+2. Start and enable the Docker service:
+   ```bash
+   sudo systemctl start docker
+   sudo systemctl enable docker
+   ```
+
+#### Step 2: **Create a Dockerfile for HammerDB**
+
+You can build a Docker image with **HammerDB** pre-installed. Here’s an example `Dockerfile`:
+
+```dockerfile
+# Use a base Linux image
+FROM ubuntu:20.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    tcl \
+    libx11-6 \
+    libxrender1 \
+    libsm6 \
+    libice6 \
+    libxtst6
+
+# Download HammerDB and extract it
+RUN wget https://www.hammerdb.com/download/hammerdb-4.2-linux.tar.gz
+RUN tar -xzvf hammerdb-4.2-linux.tar.gz
+
+# Set the working directory
+WORKDIR /hammerdb-4.2
+
+# Entry point to run HammerDB CLI
+ENTRYPOINT ["./hammerdbcli"]
+```
+
+#### Step 3: **Build the Docker Image**
+
+1. Save the Dockerfile and navigate to its directory.
+2. Build the Docker image:
+   ```bash
+   docker build -t hammerdb-cli .
+   ```
+
+#### Step 4: **Prepare a TCL Script**
+
+Prepare the same TCL script (`benchmark.tcl`) that you used in option 2 and copy it to the directory where you want to run the container.
+
+#### Step 5: **Run HammerDB Container**
+
+1. Start the HammerDB container using the TCL script for the benchmark:
+
+   ```bash
+   docker run --rm -v /path/to/tcl/script:/scripts hammerdb-cli auto /scripts/benchmark.tcl
+   ```
+
+   - `/path/to/tcl/script`: Replace this with the path to your `benchmark.tcl` file.
+   - `--rm`: Removes the container after it finishes running.
+
+2. The container will run HammerDB in CLI mode, execute the benchmark, and print the output to the terminal.
+
+#### Step 6: **Save Benchmark Results**
+
+If you want to save the benchmark output, you can redirect it to a file inside the container and copy it back to your host system:
+
+1. Modify the `docker run` command:
+   ```bash
+   docker run --rm -v /path/to/tcl/script:/scripts -v /path/to/output:/results hammerdb-cli auto /scripts/benchmark.tcl > /results/results.txt
+   ```
+
+2. After the container finishes, you’ll find the results in the `/path/to/output` directory on your host machine.
+
+---
+
+These steps allow you to run **HammerDB** in environments without a UI by either using CLI mode or Docker containers for flexibility.
