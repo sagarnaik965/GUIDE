@@ -1,0 +1,447 @@
+###################################################################################################################################################
+ROUTES
+###################################################################################################################################################
+
+START WITH THIS URL 
+
+https://apisix.apache.org/docs/apisix/getting-started/configure-routes/
+
+
+	
+curl -i "http://127.0.0.1:9180/apisix/admin/routes" -X PUT -d '
+{
+  "id": "getting-started-ip",
+  "uri": "/ip",
+  "upstream": {
+    "type": "roundrobin",
+    "nodes": {
+      "httpbin.org:80": 1
+    }
+  }
+}'
+
+CUSTOM::
+
+curl -i "http://127.0.0.1:9180/apisix/admin/routes" \
+  -X PUT \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -d '{
+    "id": "1",
+    "uri": "/ip",
+    "upstream": {
+      "type": "roundrobin",
+      "nodes": {
+        "httpbin.org:80": 1
+      }
+    }
+  }'
+
+RESPONSE:
+HTTP/1.1 201 Created
+Date: Thu, 17 Oct 2024 05:23:27 GMT
+Content-Type: application/json
+Transfer-Encoding: chunked
+Connection: keep-alive
+Server: APISIX/3.11.0
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Credentials: true
+Access-Control-Expose-Headers: *
+Access-Control-Max-Age: 3600
+X-API-VERSION: v3
+
+{"key":"/apisix/routes/getting-started-ip","value":{"upstream":{"type":"roundrobin","scheme":"http","hash_on":"vars","nodes":{"httpbin.org:80":1},"pass_host":"pass"},"create_time":1729142607,"update_time":1729142607,"id":"getting-started-ip","status":1,"uri":"/ip","priority":0}}
+
+
+
+###################################################################################################################################################
+REGISTERING NEW ROUTE FOR DASHBOARD
+###################################################################################################################################################
+
+WORKING::
+curl -i "http://127.0.0.1:9180/apisix/admin/routes" \
+  -X PUT \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -d '{
+    "id": "2",
+    "uri": "/*",
+    "upstream": {
+      "type": "roundrobin",
+      "nodes": {
+        "10.210.4.213:8080": 1
+      }
+    }
+  }'
+
+
+
+
+
+###################################################################################################################################################
+AUTH
+###################################################################################################################################################
+	
+
+curl http://127.0.0.1:9180/apisix/admin/consumers -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" -X PUT -d '
+{
+    "username": "jack",
+    "plugins": {
+        "key-auth": {
+            "key": "edd1c9f034335f136f87ad84b625c8f1"
+        }
+    }
+}'
+
+
+RESPONSE
+{"key":"/apisix/consumers/jack","value":{"create_time":1729157838,"username":"jack","plugins":{"key-auth":{"key":"s+PSqXUVJTsTIzWQ1xk1QahhywKxk3pzvWko/VIDzOLHMlbssLkJzQFuzFWVXRAH"}},"update_time":1729157838}}
+
+curl -i "http://127.0.0.1:9180/apisix/admin/routes/2" \
+-X PATCH \
+-H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+-d '{
+    "plugins": {
+        "key-auth": {}
+    },
+    "uri": "/*",
+    "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+            "10.210.4.213:8080": 1
+        }
+    }
+}'
+
+
+curl -i "http://127.0.0.1:9080/dashboard" \
+-H "apikey: edd1c9f034335f136f87ad84b625c8f1"
+
+
+
+
+
+
+
+
+
+
+
+###################################################################################################################################################
+To configure your Apache APISIX route with JWT token-based authentication, follow these steps:
+###################################################################################################################################################-
+
+
+
+### Step 1: Create a Consumer with JWT Credentials
+
+First, you need to create a consumer that includes the JWT credentials. Here's how to do that using `curl`:
+
+curl http://127.0.0.1:9180/apisix/admin/consumers -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" -X PUT -d '
+{
+    "username": "jack",
+    "plugins": {
+		 "jwt-auth": {
+            "key": "user-key",
+            "secret": "edd1c9f034335f136f87ad84b625c8f1"
+        }
+    }
+}'
+
+Replace `"your_jwt_secret"` with your actual JWT secret key that you will use to sign the JWT token.
+-----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+
+
+### Step 2: Configure the Route with JWT Authentication
+
+Next, you need to configure your route to use JWT authentication. Here’s how to update your route configuration:
+
+curl -i "http://127.0.0.1:9180/apisix/admin/routes/2" \
+-X PATCH \
+-H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+-d '{
+    "plugins": {
+		"jwt-auth": {}
+    },
+    "uri": "/*",
+    "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+            "10.210.4.213:8080": 1
+        }
+    }
+}'
+-----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+
+### Step 3: Generate a JWT Token
+
+You will need to generate a JWT token using the secret key specified earlier. Here’s an example using a Node.js script:
+-----------------------------------------------------------------------------------------------------------------------
+const jwt = require('jsonwebtoken');
+
+// Payload with the username 'jack' and an expiration of 1 hour
+const payload = {
+     key: 'user-key',
+    exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 1 hour expiration
+};
+
+// Secret key from APISIX
+const secret = 'edd1c9f034335f136f87ad84b625c8f1';
+
+// Generate the token
+const token = jwt.sign(payload, secret, { algorithm: 'HS256' });
+
+console.log('Generated JWT token:', token);
+-----------------------------------------------------------------------------------------------------------------------
+You can run this script (you will need to install the `jsonwebtoken` package) to generate a JWT token.
+
+-----------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+
+
+### Step 4: Access the Service with JWT Token
+
+Now, you can access your service using the JWT token by including it in the Authorization header:
+
+curl -i "http://127.0.0.1:9080/dashboard" \
+-H "Authorization:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTcyOTI1MDQxMSwiaWF0IjoxNzI5MTY0MDExfQ.gDBCUWYfH2fc-50vRYKATXK7nI7sKlrmqummd363vzE"
+
+Replace `your_generated_jwt_token` with the actual JWT token you generated.
+
+### Summary
+
+1. **Create a consumer** with JWT credentials.
+2. **Configure the route** to use JWT authentication.
+3. **Generate a JWT token** using the secret.
+4. **Access your service** with the JWT token in the Authorization header.
+
+If you run into any issues or need more clarification, feel free to ask! sagarn@cdac.in
+###################################################################################################################################################-
+
+
+
+
+
+###################################################################################################################################################
+TRYING FOR BOTH AUTH AT TIME
+###################################################################################################################################################
+
+
+
+
+curl http://127.0.0.1:9180/apisix/admin/consumers -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" -X PUT -d '
+{
+    "username": "jack",
+    "plugins": {
+        "key-auth": {
+            "key": "edd1c9f034335f136f87ad84b625c8f1"
+        },
+	    "jwt-auth": {
+            "key": "user-key",
+            "secret": "edd1c9f034335f136f87ad84b625c8f1"
+        }
+    }
+}'
+
+RESPONSE
+{"key":"/apisix/consumers/jack","value":{"create_time":1729157838,"username":"jack","plugins":{"key-auth":{"key":"s+PSqXUVJTsTIzWQ1xk1QahhywKxk3pzvWko/VIDzOLHMlbssLkJzQFuzFWVXRAH"},"jwt-auth":{"base64_secret":false,"lifetime_grace_period":0,"secret":"s+PSqXUVJTsTIzWQ1xk1QahhywKxk3pzvWko/VIDzOLHMlbssLkJzQFuzFWVXRAH","algorithm":"HS256","key":"user-key","exp":86400}},"update_time":1729162120}}
+
+
+curl -i "http://127.0.0.1:9180/apisix/admin/routes/2" \
+-X PATCH \
+-H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+-d '{
+    "plugins": {
+        "key-auth": {},
+	"jwt-auth": {}
+    },
+    "uri": "/*",
+    "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+            "10.210.4.213:8080": 1
+        }
+    }
+}'
+
+REQUEST URLS FOR AUTHENTICATION
+
+curl -i "http://127.0.0.1:9080/dashboard" \
+-H "apikey: edd1c9f034335f136f87ad84b625c8f1"
+
+curl -i "http://127.0.0.1:9080/dashboard" \
+-H "Authorization:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTcyOTI1MDQxMSwiaWF0IjoxNzI5MTY0MDExfQ.gDBCUWYfH2fc-50vRYKATXK7nI7sKlrmqummd363vzE"
+
+curl -i "http://127.0.0.1:9080/dashboard" \
+-H "Authorization:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTcyOTI1MDQxMSwiaWF0IjoxNzI5MTY0MDExfQ.gDBCUWYfH2fc-50vRYKATXK7nI7sKlrmqummd363vzE" \
+-H "apikey: edd1c9f034335f136f87ad84b625c8f1"
+###################################################################################################################################################
+
+
+
+
+
+
+
+
+###################################################################################################################################################
+
+
+:: CHECK LIST OF SERVICE ROUTE -->>
+ curl http://127.0.0.1:9180/apisix/admin/routes -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1'
+
+:: CHECK SERVICE ROUTE -->> 
+curl -i http://127.0.0.1:9180/dashboard 
+ or 
+curl -i http://10.210.4.213:8080/dashboard
+
+
+
+###################################################################################################################################################
+Steps to Delete an Existing Route
+###################################################################################################################################################
+
+
+Identify the Route ID If you don't know the route ID, you can list all the routes to find the one you want to delete. Run the following command to list the routes:
+
+bash
+Copy code
+curl http://127.0.0.1:9080/apisix/admin/routes \
+-H 'X-API-KEY: your-admin-api-key'
+This will return a list of all the configured routes, including their IDs.
+
+Delete the Route Once you have the route ID, you can delete it using the following command. Replace <route_id> with the ID of the route you want to delete:
+
+bash
+Copy code
+curl http://127.0.0.1:9180/apisix/admin/routes/2 -X DELETE  -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1'
+
+
+
+
+
+###################################################################################################################################################
+FOR DASHBOARD
+###################################################################################################################################################
+
+docker run -it -d --name apisix-dashboard ^
+  -e "ETCD_ENDPOINTS=http://10.210.4.213:2379" ^
+  -v "D:\TECH & SOFT\api-gateway\apisix-docker\all-in-one\apisix-dashboard\config.yaml:/usr/local/apisix-dashboard/conf/conf.yaml" ^
+  -p 9000:9000 ^
+ apache/apisix-dashboard:2.10.1-alpine
+
+
+
+
+
+{
+  "cookie": "jwt",
+  "header": "authorization",
+  "hide_credentials": false,
+  "query": "jwt"
+}
+
+{
+ "key":""
+}
+
+
+
+
+###################################################################################################################################################
+EUREKA
+###################################################################################################################################################
+
+
+### PREVIOUS
+curl -i "http://127.0.0.1:9180/apisix/admin/routes" \
+  -X PUT \
+  -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" \
+  -d '{
+    "id": "111",
+    "uri": "/*",
+    "upstream": {
+      "type": "roundrobin",
+      "nodes": {
+        "10.210.4.213:8080": 1
+      }
+    }
+  }'
+
+
+### WORKED
+curl http://127.0.0.1:9180/apisix/admin/upstreams/100 -X PUT -H "X-Api-Key: edd1c9f034335f136f87ad84b625c8f1" -d '
+
+{
+  "name": "eureka-upstream",
+  "type": "roundrobin",
+  "discovery_type": "eureka",
+  "service_name": "adv-dashboard",
+  "discovery_args": {
+    "host": "http://10.210.4.213:8761/eureka"
+  }
+}'
+
+curl http://127.0.0.1:9180/apisix/admin/routes/100 -X PUT -H "X-Api-Key: edd1c9f034335f136f87ad84b625c8f1" -d '
+{
+  "uri": "/addition",
+  "upstream_id": "100"
+}'
+
+curl http://127.0.0.1:9080/addition
+curl http://10.210.4.213:8761/eureka
+
+
+
+
+
+docker exec -it docker-apisix-apisix-1  /bin/bash
+
+
+
+
+
+
+
+curl -i "http://127.0.0.1:9080/adv-dashboard/add" ^
+-H "X-HMAC-SIGNATURE: KRv2q6f+FWIVtj/8nJQqz/hYDMdQrsBK8HRrqmJP6Uo=" ^
+-H "X-HMAC-ALGORITHM: hmac-sha256" ^
+-H "X-HMAC-ACCESS-KEY: user-key" ^
+-H "Date: Tue, 19 Jan 2021 11:33:20 GMT" ^
+-H "X-HMAC-SIGNED-HEADERS: User-Agent;x-custom-a" ^
+-H "x-custom-a: test" ^
+-H "User-Agent: curl/7.29.0"
+
+
+
+
+curl -i "http://127.0.0.1:9080/adv-dashboard/add" ^
+-H "Authorization: Signature keyId=\"user-key\", signature=\"KRv2q6f+FWIVtj/8nJQqz/hYDMdQrsBK8HRrqmJP6Uo=\", algorithm=\"hmac-sha256\"" ^
+-H "Date: Tue, 05 Nov 2024 11:31:23 GMT" ^  
+-H "X-HMAC-SIGNED-HEADERS: User-Agent;x-custom-a" ^
+-H "x-custom-a: test" ^
+-H "User-Agent: curl/7.29.0"
+
+
+
+
+ docker run --name skywalking-server-upated -d -p 1234:1234 -p 12800:12800 -p 11800:11800 --restart always apache/skywalking-oap-server:8.7.0-es6
+
+ docker run --name skywalking-ui -d -p 8080:8080 --link skywalking:skywalking -e SW_OAP_ADDRESS=http://10.210.4.213:12800 --restart always apache/skywalking-ui
+
+
+discovery:
+  eureka:
+    host:
+      - "http://10.210.4.213:8762"
+    prefix: /eureka/
+    fetch_interval: 30
+    weight: 100
+    timeout:
+      connect: 2000
+      send: 2000
+      read: 5000
+
+
+
+
