@@ -1,0 +1,19 @@
+# Eureka Server Configurations
+eureka.server.enableSelfPreservation=false          # Disable self-preservation for faster updates
+eureka.server.evictionIntervalTimerInMs=5000       # Eviction interval in milliseconds (default: 60,000ms)
+eureka.server.responseCacheUpdateIntervalMs=3000   # Cache registry updates every 3 seconds
+
+# Asynchronous Initialization
+eureka.server.enableAsyncInitialization=true
+
+# HTTP/2 for better concurrency
+server.http2.enabled=true
+
+# Embedded Server Configurations
+server.tomcat.threads.max=500                      # Max threads for Tomcat
+server.tomcat.threads.min-spare=50                 # Min spare threads
+server.port=8761    
+
+# Eureka Instance Configurations
+eureka.instance.leaseRenewalIntervalInSeconds=10   # Client sends heartbeats every 10 seconds
+eureka.instance.leaseExpirationDurationInSeconds=20 # Expiration after 20 seconds without heartbeat
