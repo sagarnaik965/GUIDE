@@ -45,7 +45,7 @@ services:
       JAVA_OPTS: "-Xms2048m -Xmx2048m"
 
   ui:
-    image: apache/skywalking-ui
+    image: apache/skywalking-ui:9.7.0
     container_name: ui
     depends_on:
       oap:
