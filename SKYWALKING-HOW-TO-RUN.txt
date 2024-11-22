@@ -1,11 +1,11 @@
 #RUN COMPOSE FILE
-docker-compose -f skywalking-docker-compose.yml up -d
+docker-compose docker-compose.yml up -d
 
 #STOP DOCKER COMPOSE APPLICATIONS
-docker-compose -f skywalking-docker-compose.yml down
+docker-compose  docker-compose.yml down
 
 #CHECK LOGS FOR COMPOSE FILE
-docker-compose -f skywalking-docker-compose.yml logs -f
+docker-compose docker-compose.yml logs -f
 
 
 
