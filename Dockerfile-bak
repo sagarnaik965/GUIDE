@@ -1,0 +1,77 @@
+FROM ubuntu:22.04
+RUN apt-get update -y
+RUN apt-get upgrade -y
+RUN apt-get install -y curl
+RUN apt-get install  -y zip 
+RUN apt-get install  -y vim
+RUN apt-get install  -y curl
+RUN apt-get install  -y telnet
+RUN  telnet
+RUN apt-get install  -y iputils-ping
+
+# Metadata indicating an image maintainer
+LABEL maintainer="adv@cdac.in"
+
+# Copy the hardening script to the container
+COPY script.sh /opt/script.sh
+
+# Make the hardening script executable
+RUN chmod 775 /opt/script.sh
+
+# Run the hardening script
+RUN /opt/script.sh
+
+# Copy files from local machine to container
+COPY jdk1.8.0_401.zip /opt
+COPY tomcat.zip /opt
+COPY dashboard.war /opt
+
+# Unzip jdk and tomcat files in the specified folders
+RUN unzip /opt/jdk1.8.0_401.zip -d /usr/java/ && \
+    unzip /opt/tomcat.zip -d /usr/appserver/ 
+
+
+# Create folder structure for Project
+RUN mkdir -p /opt/appdata/logs/tomcatlogs \
+             /opt/appdata/logs/vault \
+             /opt/appdata/logs/crypto \
+             /usr/appserver/tomcat/webapps/dashboard \
+             /usr/java
+
+#COPY ["webapps", "/usr/appserver/tomcat/webapps"]
+COPY ["context.xml", "/usr/appserver/tomcat/conf/context.xml"]
+RUN unzip /opt/dashboard.war  -d  	/usr/appserver/tomcat/webapps/dashboard 
+
+
+# Install and configure JDK
+RUN update-alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_401/bin/java 2 && \
+    update-alternatives --set java /usr/java/jdk1.8.0_401/bin/java && \
+    update-alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_401/bin/jar 2 && \
+    update-alternatives --install /usr/bin/javac javac /usr/java/jdk1.8.0_401/bin/javac 2 && \
+    update-alternatives --set jar /usr/java/jdk1.8.0_401/bin/jar && \
+    update-alternatives --set javac /usr/java/jdk1.8.0_401/bin/javac
+
+# Create user and group, set permissions
+RUN useradd -r -m -U -d /opt/tomcat -s /bin/false tomcat && \
+    groupadd ApplicationServer && \
+    usermod -aG ApplicationServer tomcat && \
+    usermod -aG ApplicationServer root && \
+    chmod -R 775 /usr/java /usr/appserver /opt/appdata && \
+    chown -R root:root /usr/appserver /opt/appdata
+
+RUN ls -la  /opt/
+
+RUN rm -rf /opt/*.zip
+RUN rm -rf /opt/*.war
+RUN rm -rf /opt/tomcat
+
+
+# Expose ports
+EXPOSE 22 8080
+
+# Start services
+CMD   /usr/appserver/tomcat/bin/catalina.sh start ;sleep inf
+
+
+
+
