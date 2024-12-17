@@ -1,0 +1,69 @@
+@CrossOrigin(origins = "http://localhost:3000")
+			@RequestMapping(value ="/igniteinvoiceRR/{clientId}", method = RequestMethod.POST)
+			@PostMapping
+		
+			public  ResponseEntity<byte[]> igniteinvoiceRR(@PathVariable(name = "clientId", required = false) String clientId) throws FileNotFoundException, JRException {
+				DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+				DateTimeFormatter dtfShort = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+				LocalDateTime now = LocalDateTime.now();
+				String dateTimeStamp=dtfShort.format(now);
+				InvoiceObject b1 = new InvoiceObject(null, "OMC002", 1000.0, convertToQuarterYear("01-10-2024"), "123", "2024-01-30", 2500, "paid", "12345678", "2024-01-30", 6);
+				InvoiceObject b2 = new InvoiceObject(null, "OMC002", 1000.0, convertToQuarterYear("01-04-2024"), "123", "2024-01-30", 2500, "paid", "12345678", "2024-01-30", 6);
+				InvoiceObject b3 = new InvoiceObject(null, "OMC002", 1000.0, convertToQuarterYear("01-07-2024"), "123", "2024-01-30", 2500, "paid", "12345678", "2024-01-30", 6);
+				InvoiceObject b4 = new InvoiceObject(null, "OMC002", 1000.0, convertToQuarterYear("01-01-2024"), "123", "2024-01-30", 2500, "paid", "12345678", "2024-01-30", 6);
+				InvoiceObject b5 = new InvoiceObject(null, "OMC002", 1000.0, convertToQuarterYear("01-10-2023"), "123", "2024-01-30", 2500, "paid", "12345678", "2024-01-30", 6);
+				InvoiceObject b6 = new InvoiceObject(null, "OMC002", 19900.0, convertToQuarterYear("01-01-2021"), "123", "2024-01-30", 2500, "paid", "12345678", "2024-01-30", 6);
+				 List<InvoiceObject> BeanParam = new ArrayList<InvoiceObject>();
+				 BeanParam.add(b1);
+				 BeanParam.add(b2);
+				 BeanParam.add(b3);
+				 BeanParam.add(b4);
+				 BeanParam.add(b5);
+				 BeanParam.add(b6);
+
+				
+				Map<String, Object> BillParam = new HashMap<String, Object>();
+				BillParam.put("CollectionBeanParam", new JRBeanCollectionDataSource(BeanParam));
+				BillParam.put("DeptName", clientId);
+				BillParam.put("dateAndTimeStamp", dateTimeStamp);
+
+				JasperPrint NormalReport = JasperFillManager.fillReport(JasperCompileManager.compileReport(
+						ResourceUtils.getFile("classpath:" + env.getProperty("jasper.invoiceDept")).getAbsolutePath()),
+						BillParam // dynamic
+						// parameters
+						, new JREmptyDataSource());
+
+
+				HttpHeaders headers = new HttpHeaders();
+				headers.setContentType(MediaType.APPLICATION_PDF);
+
+
+					return new ResponseEntity<byte[]>(JasperExportManager.exportReportToPdf(NormalReport), headers,
+							HttpStatus.OK);
+
+				
+			}
+			
+			public static String convertToQuarterYear(String dateStr) {
+			    DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+			    DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yy");
+			    try {
+			      LocalDate date = LocalDate.parse(dateStr, inputFormatter);
+			      int month = date.getMonthValue();
+			      int year = date.getYear();
+			      String shortYear = date.format(outputFormatter);
+			      String quarter;
+			      if (month >= 1 && month <= 3) {
+			        quarter = "Q1";
+			      } else if (month >= 4 && month <= 6) {
+			        quarter = "Q2";
+			      } else if (month >= 7 && month <= 9) {
+			        quarter = "Q3";
+			      } else {
+			        quarter = "Q4";
+			      }
+			      return quarter + "-" + shortYear;
+			    } catch (DateTimeParseException e) {
+			      throw new IllegalArgumentException("Invalid date format. Please use dd-MM-yyyy.");
+			    }
+			}
