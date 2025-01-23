@@ -1,0 +1,50 @@
+You can install Kubernetes using binary files even without an internet connection. Here's how you can do it:
+
+### Step-by-Step Guide
+
+1. **Download Kubernetes Binaries**:
+   - On a machine with internet access, download the Kubernetes binaries and checksum files:
+     ```bash
+     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kube-apiserver"
+     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kube-controller-manager"
+     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kube-scheduler"
+     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kube-proxy"
+     curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+     ```
+
+2. **Transfer Files to Your Offline Machine**:
+   - Copy the downloaded binaries and checksum files to a USB drive or other storage device.
+
+3. **Verify the Binaries**:
+   - On your offline machine, verify the checksums to ensure the files are not corrupted:
+     ```bash
+     sha256sum -c kube-apiserver.sha256
+     sha256sum -c kube-controller-manager.sha256
+     sha256sum -c kube-scheduler.sha256
+     sha256sum -c kube-proxy.sha256
+     sha256sum -c kubectl.sha256
+     ```
+
+4. **Install the Binaries**:
+   - Move the binaries to the appropriate directories and make them executable:
+     ```bash
+     sudo install -o root -g root -m 0755 kube-apiserver /usr/local/bin/kube-apiserver
+     sudo install -o root -g root -m 0755 kube-controller-manager /usr/local/bin/kube-controller-manager
+     sudo install -o root -g root -m 0755 kube-scheduler /usr/local/bin/kube-scheduler
+     sudo install -o root -g root -m 0755 kube-proxy /usr/local/bin/kube-proxy
+     sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+     ```
+
+5. **Initialize Kubernetes**:
+   - Run the `kubeadm init` command to initialize the Kubernetes cluster:
+     ```bash
+     sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+     ```
+
+6. **Join Worker Nodes**:
+   - On additional nodes, use the `kubeadm join` command to join them to the cluster:
+     ```bash
+     sudo kubeadm join <master-node-ip>:<master-node-port> --token <token> --discovery-token-ca-cert-hash sha256:<hash>
+     ```
+
+This should set up your Kubernetes cluster using the binaries without needing an internet connection on your Linux machine. If you encounter any issues or need further assistance, feel free to ask!
