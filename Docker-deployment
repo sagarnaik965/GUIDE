@@ -1,8 +1,8 @@
 #1 DOCKER INSTALLATIONS
-  document will be provided
+  document will be provided [Script & req. files]
 
 #2 DOCKER DEPLOYMENT FOLDER
-  Contains:: docker-image, steps to follow, other configs files required, System configuration deatils for performance
+  Contains:: docker-image, steps to follow, other config files required, System configuration details for performance tuning
 
 #3 DOCKER Cammands
   To Handle Docker containers
